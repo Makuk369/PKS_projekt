@@ -6,7 +6,6 @@ DEFAULT_PORT = 50601
 class FunOptions(Enum):
     EXIT = 0
     CONFIGURE = 1
-    AUTO_CONFIG = 11
     LISTEN = 2
 
 class Server():
@@ -26,9 +25,10 @@ class Server():
                     self.Exit()
                     break
                 case FunOptions.CONFIGURE.value:
-                    self.Configure()
-                case FunOptions.AUTO_CONFIG.value:
-                    self.Configure(True)
+                    if input("Use autoconfig [y/n]?: ") == "y":
+                        self.Configure(True)
+                    else:
+                        self.Configure()
                 case FunOptions.LISTEN.value:
                     self.Listen()
                 case _:

@@ -32,6 +32,7 @@ class Tester():
                 case FunOptions.REGISTER_SENSORS.value:
                     if not self.RegisterSensors():
                         print("Error: Could not connect sensor!")
+                    print(f"sensor[0] token = {self.connectedSensors[0].token}")
                 case FunOptions.AUTO_DATA_MSG.value:
                     self.AutoDataMsg()
                 case _:
