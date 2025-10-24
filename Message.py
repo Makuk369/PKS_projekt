@@ -1,13 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from enum import Enum
 from datetime import datetime
 
-class DeviceType(Enum):
-    THERMONODE = 0
-    WINDSENSE = 1
-    RAINDETECT = 2
-    AIRQUALITYBOX = 3
+from Sensors import DeviceType
 
 
 @dataclass
