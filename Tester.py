@@ -1,22 +1,23 @@
 import socket
 from enum import Enum
+from Sensors import Sensor, SensorType, ThermoNode, WindSense, RainDetect, AirQualityBox
 
-# SERVER_IP = "147.175.162.126"
+# SERVER_IP = "192.168.0.118"
 # SERVER_PORT = 50601 (client port != server port)
 
 class FunOptions(Enum):
     EXIT = 0
     CONFIGURE = 1
-    AUTO_DATA_MSG = 2
+    REGISTER_SENSORS = 2
+    AUTO_DATA_MSG = 3
 
 class Tester():
-    serverIp: str
-    serverPort: int
-    sock: socket.socket
-
     def __init__(self) -> None:
+        self.serverIp: str
+        self.serverPort: int
+        self.sock: socket.socket
+        self.connectedSensors: list[Sensor] = []
         self.Run()
-        pass
 
     def Run(self):
         while(True):
@@ -28,6 +29,9 @@ class Tester():
                     break
                 case FunOptions.CONFIGURE.value:
                     self.Configure()
+                case FunOptions.REGISTER_SENSORS.value:
+                    if not self.RegisterSensors():
+                        print("Error: Could not connect sensor!")
                 case FunOptions.AUTO_DATA_MSG.value:
                     self.AutoDataMsg()
                 case _:
@@ -36,24 +40,47 @@ class Tester():
     def Configure(self) -> None:
         self.serverIp = input("Enter server ip: ")
         self.serverPort = int(input("Enter server port: "))
-
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP socket creation
+
+    def RegisterSensors(self) -> bool:
+        print("Available sensors:")
+        for sensr in SensorType:
+            print(f"{sensr.value} - {sensr.name}")
+        print("4 - ALL")
+        selectedSensor = int(input("Select sensor to register: "))
+
+        match selectedSensor:
+            case SensorType.THERMONODE.value:
+                self.SendMessage("REG")
+                if self.ReceiveMessage() == "123":
+                    self.connectedSensors.append(ThermoNode(123))
+            case _:
+                print("Error: Unknown sensor!")
+
+        return True
 
     def AutoDataMsg(self) -> None:
         self.SendMessage("test")
+
+    def ReceiveMessage(self) -> str:
+        data = None
+        while data == None:
+            data = self.sock.recv(1024) #buffer size is 1024 bytes
+        return str(data, encoding="utf-8")
 
     def SendMessage(self, message: str):
         self.sock.sendto(message.encode("utf8"), (self.serverIp, self.serverPort))
 
     def PrintFunOptions(self) -> None:
-        print("Available functions:\n"
-            f"{FunOptions.EXIT.value} - {FunOptions.EXIT.name}\n"
-            f"{FunOptions.CONFIGURE.value} - {FunOptions.CONFIGURE.name}\n"
-            f"{FunOptions.AUTO_DATA_MSG.value} - {FunOptions.AUTO_DATA_MSG.name}"
-        )
+        print("Available functions:")
+        for opts in FunOptions:
+            print(f"{opts.value} - {opts.name}")
 
     def Exit(self) -> None:
-        self.sock.close() # correctly closing socket
+        try:
+            self.sock.close() # correctly closing socket
+        except AttributeError:
+            pass
         print("Exited tester")
 
 if __name__ == '__main__':

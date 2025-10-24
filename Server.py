@@ -10,11 +10,10 @@ class FunOptions(Enum):
     LISTEN = 2
 
 class Server():
-    ip: str
-    port: int
-    sock: socket.socket
-
     def __init__(self) -> None:
+        self.ip: str
+        self.port: int
+        self.sock: socket.socket
         self.Run()
         pass
 
@@ -41,6 +40,7 @@ class Server():
         if autoconfig:
             self.ip = socket.gethostbyname(socket.gethostname())
             self.port = DEFAULT_PORT
+            print(f"IP: {self.ip}, Port: {self.port}")
         else:
             self.ip = input("Enter server ip: ")
             self.port = int(input("Enter server port: "))
@@ -49,24 +49,30 @@ class Server():
         self.sock.bind((self.ip, self.port)) #needs to be tuple (string,int)
 
     def Listen(self):
-        data = self.Receive()
+        data = self.ReceiveMessage()
         print(f"Recieved: {data}")
+        if data == "REG":
+            self.SendMessage("123")
 
-    def Receive(self) -> str:
+    def ReceiveMessage(self) -> str:
         data = None
         while data == None:
             data, self.client = self.sock.recvfrom(1024) #buffer size is 1024 bytes
         return str(data, encoding="utf-8")
+    
+    def SendMessage(self, message: str):
+        self.sock.sendto(message.encode("utf8"), self.client)
 
     def PrintFunOptions(self) -> None:
-        print("Available functions:\n"
-            f"{FunOptions.EXIT.value} - {FunOptions.EXIT.name}\n"
-            f"{FunOptions.CONFIGURE.value} - {FunOptions.CONFIGURE.name} ({FunOptions.AUTO_CONFIG.value} - auto)\n"
-            f"{FunOptions.LISTEN.value} - {FunOptions.LISTEN.name}"
-        )
+        print("Available functions:")
+        for opts in FunOptions:
+            print(f"{opts.value} - {opts.name}")
     
     def Exit(self) -> None:
-        self.sock.close() # correctly closing socket
+        try:
+            self.sock.close() # correctly closing socket
+        except AttributeError:
+            pass
         print("Exited server")
 
 if __name__ == '__main__':

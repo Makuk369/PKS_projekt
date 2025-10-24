@@ -2,30 +2,26 @@ import random
 from abc import ABC, abstractmethod
 from enum import Enum
 
-class DeviceType(Enum):
+class SensorType(Enum):
     THERMONODE = 0
     WINDSENSE = 1
     RAINDETECT = 2
     AIRQUALITYBOX = 3
 
 class Sensor(ABC):
-    def __init__(self, devType) -> None:
+    def __init__(self, devType, token) -> None:
         super().__init__()
-        self.deviceType: DeviceType = devType
-        self.token: int = -1
+        self.deviceType: SensorType = devType
+        self.token: int = token # -1 == invalid token/not registered to server
         self.isActive: bool = True
-
-    def RegisterToServer(self) -> bool:
-        """Return True if registration was successful"""
-        return True
 
     @abstractmethod
     def UpdateData(self) -> None:
         pass
 
 class ThermoNode(Sensor):
-    def __init__(self) -> None:
-        super().__init__(DeviceType.THERMONODE)
+    def __init__(self, token = -1) -> None:
+        super().__init__(SensorType.THERMONODE, token)
         self.temperature: float = random.uniform(-50.0, 60.0)
         self.humidity: float = random.uniform(0.0, 100.0)
         self.dewPoint: float = random.uniform(-50.0, 60.0)
@@ -38,8 +34,8 @@ class ThermoNode(Sensor):
         self.pressure: float = random.uniform(800.0, 1100.0)
 
 class WindSense(Sensor):
-    def __init__(self) -> None:
-        super().__init__(DeviceType.WINDSENSE)
+    def __init__(self, token = -1) -> None:
+        super().__init__(SensorType.WINDSENSE, token)
         self.windSpeed: float = random.uniform(0.0, 50.0)
         self.windGust: float = random.uniform(0.0, 70.0)
         self.windDir: int = random.randint(0, 359)
@@ -52,8 +48,8 @@ class WindSense(Sensor):
         self.turbulence: float = random.random()
 
 class RainDetect(Sensor):
-    def __init__(self) -> None:
-        super().__init__(DeviceType.RAINDETECT)
+    def __init__(self, token = -1) -> None:
+        super().__init__(SensorType.RAINDETECT, token)
         self.rainfall: float = random.uniform(0.0, 500.0)
         self.soilMoisture: float = random.uniform(0.0, 100.0)
         self.floodRisk: int = random.randint(0, 3)
@@ -66,8 +62,8 @@ class RainDetect(Sensor):
         self.rainDuration: int = random.randint(0, 60)
 
 class AirQualityBox(Sensor):
-    def __init__(self) -> None:
-        super().__init__(DeviceType.AIRQUALITYBOX)
+    def __init__(self, token = -1) -> None:
+        super().__init__(SensorType.AIRQUALITYBOX, token)
         self.co2: float = random.randint(300, 5000)
         self.ozone: float = random.uniform(0.0, 500.0)
         self.airQualityIndex: int = random.randint(0, 500)
