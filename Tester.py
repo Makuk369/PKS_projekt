@@ -38,19 +38,18 @@ class Tester():
         self.serverPort = int(input("Enter server port: "))
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP socket creation
-        # self.sock.bind((self.serverIp, self.serverPort)) #needs to be tuple (string,int)
 
     def AutoDataMsg(self) -> None:
         self.SendMessage("test")
 
-    def SendMessage(self, message):
-        self.sock.sendto(bytes(message, encoding="utf8"), (self.serverIp, self.serverPort))
+    def SendMessage(self, message: str):
+        self.sock.sendto(message.encode("utf8"), (self.serverIp, self.serverPort))
 
     def PrintFunOptions(self) -> None:
         print("Available functions:\n"
             f"{FunOptions.EXIT.value} - {FunOptions.EXIT.name}\n"
             f"{FunOptions.CONFIGURE.value} - {FunOptions.CONFIGURE.name}\n"
-            f"{FunOptions.AUTO_DATA_MSG.value} - {FunOptions.AUTO_DATA_MSG.name}\n"
+            f"{FunOptions.AUTO_DATA_MSG.value} - {FunOptions.AUTO_DATA_MSG.name}"
         )
 
     def Exit(self) -> None:

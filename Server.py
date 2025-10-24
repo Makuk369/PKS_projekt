@@ -62,7 +62,7 @@ class Server():
         print("Available functions:\n"
             f"{FunOptions.EXIT.value} - {FunOptions.EXIT.name}\n"
             f"{FunOptions.CONFIGURE.value} - {FunOptions.CONFIGURE.name} ({FunOptions.AUTO_CONFIG.value} - auto)\n"
-            f"{FunOptions.LISTEN.value} - {FunOptions.LISTEN.name}\n"
+            f"{FunOptions.LISTEN.value} - {FunOptions.LISTEN.name}"
         )
     
     def Exit(self) -> None:
