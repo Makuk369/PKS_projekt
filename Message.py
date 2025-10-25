@@ -7,6 +7,7 @@ from Sensors import SensorType
 class MessageType(Enum):
     REG = 0
     REGT = 1
+    AUTO_DATA = 10
 
 def JsonSerializer(obj):
     if isinstance(obj, Enum):
