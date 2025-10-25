@@ -81,10 +81,11 @@ class Server():
 
     def Listen(self):
         rcvmsg = self.ReceiveMessage()
-        match rcvmsg.msgType:
-            case MessageType.REG.value:
-                self.tokens.append(random.randint(0, maxint))
-                self.SendMessage(Message(rcvmsg.sensorType, MessageType.REGT, self.tokens[-1], rcvmsg.battery))
+        if (rcvmsg.token in self.tokens) or (rcvmsg.token == -1):
+            match rcvmsg.msgType:
+                case MessageType.REG.value:
+                    self.tokens.append(random.randint(0, maxint))
+                    self.SendMessage(Message(rcvmsg.sensorType, MessageType.REGT, self.tokens[-1], rcvmsg.battery))
 
     def AutoListen(self):
         print("Started Autolisten")
