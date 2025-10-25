@@ -11,7 +11,9 @@ class FunOptions(Enum):
     EXIT = 0
     CONFIGURE = 1
     LISTEN = 2
-    SH_MSG_HISTORY = 10
+    BG_LISTEN = 3
+    SH_ALL_MSGS = 10
+    SH_SENSOR_MSGS = 11
 
 class Server():
     def __init__(self) -> None:
@@ -44,22 +46,27 @@ class Server():
                         self.Configure()
 
                 case FunOptions.LISTEN.value:
-                    choice = input("Turn auto listen (messages will not show in terminal) [on/off/skip]?: ").strip().lower()
+                    self.Listen()
+
+                case FunOptions.BG_LISTEN.value:
+                    choice = input("Turn auto listen [on/off]?: ").strip().lower()
                     if choice == "on":
                         if not self.bgThread.is_alive():
                             self.stopBgThread.clear()
+                            self.bgThread = threading.Thread(target=self.AutoListen, daemon=True)
                             self.bgThread.start()
                         else:
                             print("Auto listen is already on")
                     elif choice == "off":
                         self.stopBgThread.set()
-                    elif choice == "skip":
-                        self.Listen()
                     else:
                         print("Error: Unknown choice!")
 
-                case FunOptions.SH_MSG_HISTORY.value:
+                case FunOptions.SH_ALL_MSGS.value:
                     self.ShowMsgHistory()
+                
+                case FunOptions.SH_SENSOR_MSGS.value:
+                    self.ShowSensorMsgHistory()
 
                 case _:
                     print("Error: Unknown function!")  
@@ -86,6 +93,7 @@ class Server():
                 case MessageType.REG.value:
                     self.tokens.append(random.randint(0, maxint))
                     self.SendMessage(Message(rcvmsg.sensorType, MessageType.REGT, self.tokens[-1], rcvmsg.battery))
+                    print(f"INFO: {rcvmsg.sensorType} REGISTERED at {rcvmsg.timestamp}")
 
     def AutoListen(self):
         print("Started Autolisten")
@@ -107,8 +115,20 @@ class Server():
         self.sock.sendto(message.ToJsonStr().encode("utf8"), self.client)
 
     def ShowMsgHistory(self):
+        print("----- All Message History -----")
         for msg in self.recievedMsgs:
             print(msg)
+        print("-------------------------------")
+
+    def ShowSensorMsgHistory(self):
+        print("----- Sensor Message History -----")
+        for msg in self.recievedMsgs:
+            if msg.msgType == MessageType.AUTO_DATA.value:
+                print(f"{msg.timestamp} - {msg.sensorType}")
+                for param in msg.data:
+                    print(f"{param}: {msg.data[param]}", end="; ")
+                print("")
+        print("----------------------------------")
 
     def PrintFunOptions(self) -> None:
         print("Available functions:")

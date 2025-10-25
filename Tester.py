@@ -13,7 +13,7 @@ class FunOptions(Enum):
     CONFIGURE = 1
     REGISTER_SENSORS = 2
     AUTO_DATA_MSG = 3
-    SH_MSG_HISTORY = 10
+    SH_ALL_MSGS = 10
 
 class Tester():
     def __init__(self) -> None:
@@ -41,14 +41,14 @@ class Tester():
                     self.Configure()
 
                 case FunOptions.REGISTER_SENSORS.value:
-                    if not self.RegisterSensors():
-                        print("Error: Could not connect sensor!")
+                    self.RegisterSensors()
 
                 case FunOptions.AUTO_DATA_MSG.value:
                     choice = input("Turn auto message [on/off]?: ").strip().lower()
                     if choice == "on":
                         if not self.bgThread.is_alive():
                             self.stopBgThread.clear()
+                            self.bgThread = threading.Thread(target=self.AutoDataMsg, daemon=True)
                             self.bgThread.start()
                         else:
                             print("Auto message is already on")
@@ -57,7 +57,7 @@ class Tester():
                     else:
                         print("Error: Unknown choice!")
 
-                case FunOptions.SH_MSG_HISTORY.value:
+                case FunOptions.SH_ALL_MSGS.value:
                     self.ShowMsgHistory()
 
                 case _:
@@ -68,29 +68,42 @@ class Tester():
         self.serverPort = int(input("Enter server port: "))
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP socket creation
 
-    def RegisterSensors(self) -> bool:
+    def RegisterSensors(self) -> None:
         print("Available sensors:")
         for sensr in SensorType:
             print(f"{sensr.value} - {sensr.name}")
-        print("4 - ALL")
-        selectedSensor = int(input("Select sensor to register: "))
 
+        selectedSensor = int(input("Select sensor to register: "))
         match selectedSensor:
             case SensorType.THERMONODE.value:
                 self.SendMessage(Message(SensorType.THERMONODE, MessageType.REG))
                 rcvmsg = self.ReceiveMessage()
                 self.connectedSensors.append(ThermoNode(rcvmsg.token))
+
+            case SensorType.WINDSENSE.value:
+                self.SendMessage(Message(SensorType.WINDSENSE, MessageType.REG))
+                rcvmsg = self.ReceiveMessage()
+                self.connectedSensors.append(WindSense(rcvmsg.token))
+
+            case SensorType.RAINDETECT.value:
+                self.SendMessage(Message(SensorType.RAINDETECT, MessageType.REG))
+                rcvmsg = self.ReceiveMessage()
+                self.connectedSensors.append(RainDetect(rcvmsg.token))
+
+            case SensorType.AIRQUALITYBOX.value:
+                self.SendMessage(Message(SensorType.AIRQUALITYBOX, MessageType.REG))
+                rcvmsg = self.ReceiveMessage()
+                self.connectedSensors.append(AirQualityBox(rcvmsg.token))
+
             case _:
                 print("Error: Unknown sensor!")
-
-        return True
 
     def AutoDataMsg(self) -> None:
         print("Started Automessage")
         while not self.stopBgThread.is_set():
             for sensor in self.connectedSensors:
                 sensor.UpdateData()
-                self.SendMessage(Message(sensor.type, MessageType.AUTO_DATA, sensor.token, sensor.battery), True)
+                self.SendMessage(Message(sensor.type, MessageType.AUTO_DATA, sensor.token, sensor.battery, data=sensor.GetData()), True)
             time.sleep(10)
 
     def ReceiveMessage(self) -> Message:
@@ -108,8 +121,10 @@ class Tester():
             self.sock.sendto(message.ToJsonStr().encode("utf8"), (self.serverIp, self.serverPort+1))
 
     def ShowMsgHistory(self):
+        print("----- All Message History -----")
         for msg in self.recievedMsgs:
             print(msg)
+        print("-------------------------------")
 
     def PrintFunOptions(self) -> None:
         print("Available functions:")

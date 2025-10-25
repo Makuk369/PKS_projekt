@@ -24,7 +24,7 @@ class Message():
     token: int = field(default=-1) # -1 == token not set yet
     battery: int = field(default=100)
     timestamp: float = field(default_factory=GetTimestamp) # UNIX timestamp
-    data: list = field(default_factory=list) # additional data
+    data: dict = field(default_factory=dict) # additional data
 
     def ToJsonStr(self) -> str:
         return json.dumps(asdict(self), default=JsonSerializer)

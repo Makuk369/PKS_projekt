@@ -20,6 +20,11 @@ class Sensor(ABC):
     def UpdateData(self) -> None:
         pass
 
+    @abstractmethod
+    def GetData(self) -> dict[str, float | int]:
+        pass
+
+
 class ThermoNode(Sensor):
     def __init__(self, token = -1) -> None:
         super().__init__(SensorType.THERMONODE, token)
@@ -34,6 +39,14 @@ class ThermoNode(Sensor):
         self.dewPoint = random.uniform(-50.0, 60.0)
         self.pressure = random.uniform(800.0, 1100.0)
         self.battery = max(0, self.battery-1)
+
+    def GetData(self) -> dict[str, float | int]:
+        return {
+            "temperature": self.temperature,
+            "humidity": self.humidity,
+            "dewPoint": self.dewPoint,
+            "pressure": self.pressure
+        }
 
 class WindSense(Sensor):
     def __init__(self, token = -1) -> None:
@@ -50,6 +63,14 @@ class WindSense(Sensor):
         self.turbulence = random.random()
         self.battery = max(0, self.battery-1)
 
+    def GetData(self) -> dict[str, float | int]:
+        return {
+            "windSpeed": self.windSpeed,
+            "windGust": self.windGust,
+            "windDir": self.windDir,
+            "turbulence": self.turbulence
+        }
+
 class RainDetect(Sensor):
     def __init__(self, token = -1) -> None:
         super().__init__(SensorType.RAINDETECT, token)
@@ -65,6 +86,14 @@ class RainDetect(Sensor):
         self.rainDuration = random.randint(0, 60)
         self.battery = max(0, self.battery-1)
 
+    def GetData(self) -> dict[str, float | int]:
+        return {
+            "rainfall": self.rainfall,
+            "soilMoisture": self.soilMoisture,
+            "floodRisk": self.floodRisk,
+            "rainDuration": self.rainDuration
+        }
+
 class AirQualityBox(Sensor):
     def __init__(self, token = -1) -> None:
         super().__init__(SensorType.AIRQUALITYBOX, token)
@@ -77,6 +106,13 @@ class AirQualityBox(Sensor):
         self.ozone = random.uniform(0.0, 500.0)
         self.airQualityIndex = random.randint(0, 500)
         self.battery = max(0, self.battery-1)
+
+    def GetData(self) -> dict[str, float | int]:
+        return {
+            "co2": self.co2,
+            "ozone": self.ozone,
+            "airQualityIndex": self.airQualityIndex
+        }
 
 
 if __name__ == '__main__':
