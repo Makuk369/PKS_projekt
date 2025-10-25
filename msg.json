@@ -1,7 +1,12 @@
 {
     "sensorType": 0,
     "msgType": 0,
-    "timestamp": "2025-10-24T20:02:27.053250",
+    "token": -1,
     "battery": 100,
-    "token": -1
+    "timestamp": "2025-10-25T11:03:40.648045",
+    "data": [
+        "daco",
+        123,
+        3.14
+    ]
 }
