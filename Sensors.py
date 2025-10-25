@@ -28,16 +28,16 @@ class Sensor(ABC):
 class ThermoNode(Sensor):
     def __init__(self, token = -1) -> None:
         super().__init__(SensorType.THERMONODE, token)
-        self.temperature: float = random.uniform(-50.0, 60.0)
-        self.humidity: float = random.uniform(0.0, 100.0)
-        self.dewPoint: float = random.uniform(-50.0, 60.0)
-        self.pressure: float = random.uniform(800.0, 1100.0)
+        self.temperature: float = round(random.uniform(-50.0, 60.0), 1)
+        self.humidity: float = round(random.uniform(0.0, 100.0), 1)
+        self.dewPoint: float = round(random.uniform(-50.0, 60.0), 1)
+        self.pressure: float = round(random.uniform(800.0, 1100.0), 2)
 
     def UpdateData(self) -> None:
-        self.temperature = random.uniform(-50.0, 60.0)
-        self.humidity = random.uniform(0.0, 100.0)
-        self.dewPoint = random.uniform(-50.0, 60.0)
-        self.pressure = random.uniform(800.0, 1100.0)
+        self.temperature = round(random.uniform(-50.0, 60.0), 1)
+        self.humidity = round(random.uniform(0.0, 100.0), 1)
+        self.dewPoint = round(random.uniform(-50.0, 60.0), 1)
+        self.pressure = round(random.uniform(800.0, 1100.0), 2)
         self.battery = max(0, self.battery-1)
 
     def GetData(self) -> dict[str, float | int]:
@@ -51,16 +51,16 @@ class ThermoNode(Sensor):
 class WindSense(Sensor):
     def __init__(self, token = -1) -> None:
         super().__init__(SensorType.WINDSENSE, token)
-        self.windSpeed: float = random.uniform(0.0, 50.0)
-        self.windGust: float = random.uniform(0.0, 70.0)
+        self.windSpeed: float = round(random.uniform(0.0, 50.0), 1)
+        self.windGust: float = round(random.uniform(0.0, 70.0), 1)
         self.windDir: int = random.randint(0, 359)
-        self.turbulence: float = random.random()
+        self.turbulence: float = round(random.random(), 1)
 
     def UpdateData(self) -> None:
-        self.windSpeed = random.uniform(0.0, 50.0)
-        self.windGust = random.uniform(0.0, 70.0)
+        self.windSpeed = round(random.uniform(0.0, 50.0), 1)
+        self.windGust = round(random.uniform(0.0, 70.0), 1)
         self.windDir = random.randint(0, 359)
-        self.turbulence = random.random()
+        self.turbulence = round(random.random(), 1)
         self.battery = max(0, self.battery-1)
 
     def GetData(self) -> dict[str, float | int]:
@@ -74,14 +74,14 @@ class WindSense(Sensor):
 class RainDetect(Sensor):
     def __init__(self, token = -1) -> None:
         super().__init__(SensorType.RAINDETECT, token)
-        self.rainfall: float = random.uniform(0.0, 500.0)
-        self.soilMoisture: float = random.uniform(0.0, 100.0)
+        self.rainfall: float = round(random.uniform(0.0, 500.0), 1)
+        self.soilMoisture: float = round(random.uniform(0.0, 100.0), 1)
         self.floodRisk: int = random.randint(0, 3)
         self.rainDuration: int = random.randint(0, 60)
 
     def UpdateData(self) -> None:
-        self.rainfall = random.uniform(0.0, 500.0)
-        self.soilMoisture = random.uniform(0.0, 100.0)
+        self.rainfall = round(random.uniform(0.0, 500.0), 1)
+        self.soilMoisture = round(random.uniform(0.0, 100.0), 1)
         self.floodRisk = random.randint(0, 3)
         self.rainDuration = random.randint(0, 60)
         self.battery = max(0, self.battery-1)
@@ -97,13 +97,13 @@ class RainDetect(Sensor):
 class AirQualityBox(Sensor):
     def __init__(self, token = -1) -> None:
         super().__init__(SensorType.AIRQUALITYBOX, token)
-        self.co2: float = random.randint(300, 5000)
-        self.ozone: float = random.uniform(0.0, 500.0)
+        self.co2: int = random.randint(300, 5000)
+        self.ozone: float = round(random.uniform(0.0, 500.0), 1)
         self.airQualityIndex: int = random.randint(0, 500)
 
     def UpdateData(self) -> None:
         self.co2 = random.randint(300, 5000)
-        self.ozone = random.uniform(0.0, 500.0)
+        self.ozone = round(random.uniform(0.0, 500.0), 1)
         self.airQualityIndex = random.randint(0, 500)
         self.battery = max(0, self.battery-1)
 
