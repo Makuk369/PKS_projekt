@@ -1,6 +1,7 @@
 import socket
 from enum import Enum
 from Sensors import Sensor, SensorType, ThermoNode, WindSense, RainDetect, AirQualityBox
+from Message import Message, MessageType
 
 # SERVER_IP = "192.168.0.118"
 # SERVER_PORT = 50601 (client port != server port)
@@ -52,25 +53,27 @@ class Tester():
 
         match selectedSensor:
             case SensorType.THERMONODE.value:
-                self.SendMessage("REG")
-                if self.ReceiveMessage() == "123":
-                    self.connectedSensors.append(ThermoNode(123))
+                self.SendMessage(Message(SensorType.THERMONODE, MessageType.REG))
+                rcvmsg = self.ReceiveMessage()
+                print(f"Recieved: {rcvmsg}")
+                self.connectedSensors.append(ThermoNode(rcvmsg.token))
             case _:
                 print("Error: Unknown sensor!")
 
         return True
 
     def AutoDataMsg(self) -> None:
-        self.SendMessage("test")
+        # self.SendMessage("test")
+        pass
 
-    def ReceiveMessage(self) -> str:
+    def ReceiveMessage(self) -> Message:
         data = None
         while data == None:
-            data = self.sock.recv(1024) #buffer size is 1024 bytes
-        return str(data, encoding="utf-8")
+            data = self.sock.recv(2048) #buffer size
+        return Message.InitFromJsonStr(str(data, encoding="utf-8"))
 
-    def SendMessage(self, message: str):
-        self.sock.sendto(message.encode("utf8"), (self.serverIp, self.serverPort))
+    def SendMessage(self, message: Message):
+        self.sock.sendto(message.ToJsonStr().encode("utf8"), (self.serverIp, self.serverPort))
 
     def PrintFunOptions(self) -> None:
         print("Available functions:")
