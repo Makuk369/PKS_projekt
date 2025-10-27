@@ -79,6 +79,7 @@ class Tester():
             case SensorType.THERMONODE.value:
                 self.SendMessage(Message(SensorType.THERMONODE, MessageType.REG))
                 rcvmsg = self.ReceiveMessage()
+                print("Recieved: ", rcvmsg)
                 self.connectedSensors.append(ThermoNode(rcvmsg.token))
 
             case SensorType.WINDSENSE.value:
@@ -104,7 +105,7 @@ class Tester():
         while not self.stopBgThread.is_set():
             for sensor in self.connectedSensors:
                 sensor.UpdateData()
-                self.SendMessage(Message(sensor.type, MessageType.DATA, sensor.token, data=sensor.GetData()), True)
+                self.SendMessage(Message(sensor.type, MessageType.DATA, sensor.token, data=sensor.GetData()))
             time.sleep(10)
 
     def CustomMsg(self) -> None:
@@ -131,17 +132,14 @@ class Tester():
         self.recievedMsgs.append(rcvmsg)
         return rcvmsg
 
-    def SendMessage(self, message: Message, inBg = False, doCrcError = False):
+    def SendMessage(self, message: Message, doCrcError = False):
         if doCrcError:
             message.CalcCrc()
             message.crc += 1
         else:
             message.CalcCrc()
 
-        if not inBg:
-            self.sock.sendto(message.ToJsonStr().encode("utf8"), (self.serverIp, self.serverPort))
-        else:
-            self.sock.sendto(message.ToJsonStr().encode("utf8"), (self.serverIp, self.serverPort+1))
+        self.sock.sendto(message.ToJsonStr().encode("utf8"), (self.serverIp, self.serverPort))
 
     def ShowMsgHistory(self):
         print("----- All Message History -----")

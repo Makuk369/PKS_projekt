@@ -24,7 +24,7 @@ class Message():
     token: int = field(default=-1) # -1 == token not set yet
     isLowBattery: bool = field(default=False)
     timestamp: float = field(default_factory=GetTimestamp) # UNIX timestamp
-    crc: int = field(init=False)
+    crc: int = field(default=0)
     data: dict = field(default_factory=dict) # additional data
 
     def ToJsonStr(self) -> str:
@@ -35,11 +35,10 @@ class Message():
         return cls(**json.loads(jsonStr)) #dict -> Message
     
     def CalcCrc(self) -> None:
-        """token - (sensorType.value + msgType.value + battery + timestamp)"""
-        self.crc = self.token - (self.sensorType.value + self.msgType.value + self.isLowBattery + int(self.timestamp))
+        self.crc = abs(self.token - int(self.timestamp))
 
 if __name__ == '__main__':
-    # msg = Message(SensorType.THERMONODE, MessageType.REG)
+    msg = Message(SensorType.THERMONODE, MessageType.REG)
     # msg.CalcCrc()
     # print("msg: ", msg)
     # # msg.data = ["daco", 123, 3.14]
@@ -53,4 +52,3 @@ if __name__ == '__main__':
     # rcv = msg2.ToJsonStr()
     # print(rcv)
 
-    print(1 + False)
