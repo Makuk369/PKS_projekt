@@ -1,12 +1,13 @@
 import socket
 import random
 import threading
+import time
 from enum import Enum
 from Message import Message, MessageType
 from sys import maxsize as maxint
 
 DEFAULT_PORT = 50601
-# SOCK_TIMEOUT = 5.0
+SOCK_TIMEOUT = 5.0
 
 class FunOptions(Enum):
     EXIT = 0
@@ -56,7 +57,6 @@ class Server():
                         print("Already listening")
                     else:
                         self.bgThread.start()
-                    # self.Listen()
 
                 case FunOptions.HIDE_AUTO_MSGS.value:
                     self.hideAutoMsg = not self.hideAutoMsg
@@ -78,45 +78,48 @@ class Server():
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP socket creation
         self.sock.bind((self.ip, self.port)) #needs to be tuple (string,int)
-        # self.sock.settimeout(SOCK_TIMEOUT)
+        self.sock.settimeout(SOCK_TIMEOUT)
 
     def Listen(self) -> None:
         print("Started listening")
         while not self.stopBgThread.is_set():
             rcvmsg = self.ReceiveMessage()
-            print("Recieved: ", rcvmsg)
 
-            if not ((rcvmsg.token in self.tokens) or (rcvmsg.token == -1)):
-                print("Error: Message has unknown token")
-                return
-            
-            if not (self.CheckCrc(rcvmsg)):
-                print("Error: Message has wrong crc")
-                return
-
-            match rcvmsg.msgType:
-                case MessageType.REG.value:
-                    self.tokens.append(random.randint(0, maxint))
-                    self.SendMessage(Message(rcvmsg.sensorType, MessageType.REGT, self.tokens[-1]))
-                    print(f"INFO: {rcvmsg.sensorType} REGISTERED at {rcvmsg.timestamp}")
+            if rcvmsg is not None: 
+                if not ((rcvmsg.token in self.tokens) or (rcvmsg.token == -1)):
+                    print("Error: Message has unknown token")
+                    return
                 
-                case MessageType.DATA.value:
-                    if self.hideAutoMsg:
-                        # continue
-                        pass
+                if not (self.CheckCrc(rcvmsg)):
+                    print("Error: Message has wrong crc")
+                    return
 
-                    print(f"{rcvmsg.timestamp} - {rcvmsg.sensorType}")
-                    for param in rcvmsg.data:
-                        print(f"{param}: {rcvmsg.data[param]}", end="; ")
-                    print("")
-            
-                case _:
-                    print("Error: Unknown message type!") 
+                match rcvmsg.msgType:
+                    case MessageType.REG.value:
+                        self.tokens.append(random.randint(0, maxint))
+                        self.SendMessage(Message(rcvmsg.sensorType, MessageType.REGT, self.tokens[-1]))
+                        print(f"INFO: {rcvmsg.sensorType} REGISTERED at {rcvmsg.timestamp}")
+                    
+                    case MessageType.DATA.value:
+                        if self.hideAutoMsg:
+                            # continue
+                            pass
 
-    def ReceiveMessage(self) -> Message:
-        data = None
-        while data == None:
+                        print(f"{rcvmsg.timestamp} - {rcvmsg.sensorType}")
+                        for param in rcvmsg.data:
+                            print(f"{param}: {rcvmsg.data[param]}", end="; ")
+                        print("")
+                
+                    case _:
+                        print("Error: Unknown message type!") 
+
+    def ReceiveMessage(self) -> Message | None:
+        """Returns None after socket timeout"""
+        try:
             data, self.client = self.sock.recvfrom(2048) #buffer size bytes
+        except socket.timeout:
+            return None
+        
         rcvmsg = Message.InitFromJsonStr(str(data, encoding="utf-8"))
         self.recievedMsgs.append(rcvmsg)
         return rcvmsg
@@ -141,7 +144,10 @@ class Server():
     
     def Exit(self) -> None:
         try:
-            # self.stopBgThread.set()
+            self.stopBgThread.set()
+            while self.bgThread.is_alive():
+                time.sleep(0.5)
+                print("Waiting for bgThread to stop")
             self.sock.close() # correctly closing socket
         except AttributeError:
             pass
