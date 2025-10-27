@@ -13,8 +13,8 @@ class FunOptions(Enum):
     EXIT = 0
     CONFIGURE = 1
     LISTEN = 2
-    HIDE_AUTO_MSGS = 10
-    SH_ALL_MSGS = 11
+    SH_ALL_MSGS = 10
+    HIDE_AUTO_MSGS = 11
 
 class Server():
     def __init__(self) -> None:
@@ -58,15 +58,15 @@ class Server():
                     else:
                         self.bgThread.start()
 
+                case FunOptions.SH_ALL_MSGS.value:
+                    self.ShowMsgHistory()
+
                 case FunOptions.HIDE_AUTO_MSGS.value:
                     self.hideAutoMsg = not self.hideAutoMsg
                     if self.hideAutoMsg:
                         print("Auto messages are now hidden")
                     else:
                         print("Auto messages will be displayed again")
-
-                case FunOptions.SH_ALL_MSGS.value:
-                    self.ShowMsgHistory()
 
                 case _:
                     print("Error: Unknown function!")  

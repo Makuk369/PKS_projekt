@@ -5,8 +5,7 @@ from enum import Enum
 from Sensors import Sensor, SensorType, ThermoNode, WindSense, RainDetect, AirQualityBox
 from Message import Message, MessageType
 
-# SERVER_IP = "192.168.0.118"
-# SERVER_PORT = 50601 (client port != server port), +1 for bg port
+# SERVER_PORT = 50601 (client port != server port)
 
 class FunOptions(Enum):
     EXIT = 0
@@ -14,6 +13,7 @@ class FunOptions(Enum):
     REGISTER_SENSORS = 2
     AUTO_DATA_MSG = 3
     CUSTOM_MSG = 4
+    CUSTOM_MSG_WITH_ERROR = 5
     SH_ALL_MSGS = 10
 
 class Tester():
@@ -65,6 +65,9 @@ class Tester():
 
                 case FunOptions.CUSTOM_MSG.value:
                     self.CustomMsg()
+
+                case FunOptions.CUSTOM_MSG_WITH_ERROR.value:
+                    self.CustomMsgWithError()
 
                 case FunOptions.SH_ALL_MSGS.value:
                     self.ShowMsgHistory()
@@ -122,8 +125,16 @@ class Tester():
         for sensor in self.connectedSensors:
             print(f"{i} - {SensorType(sensor.type)}")
             i += 1
+        
+        if i == 0:
+            print("Error: No sonnected sensors!")
+            return
 
-        selectedSensor = int(input("Select sensor: "))
+        try:
+            selectedSensor = int(input("Select sensor: "))
+        except:
+            print("Error: Unknown sensor!")
+            return
 
         lowBat = input("Low battery warning [y/n]?: ").strip().lower()
         if lowBat == "y":
@@ -135,6 +146,27 @@ class Tester():
         
         msg = Message(self.connectedSensors[selectedSensor].type, MessageType.DATA, self.connectedSensors[selectedSensor].token, lowBat, data=self.connectedSensors[selectedSensor].GetData())
         self.SendMessage(msg)
+
+    def CustomMsgWithError(self) -> None:
+        i = 0
+        print("Connected Sensors:")
+        for sensor in self.connectedSensors:
+            print(f"{i} - {SensorType(sensor.type)}")
+            i += 1
+
+        if i == 0:
+            print("Error: No sonnected sensors!")
+            return
+
+        try:
+            selectedSensor = int(input("Select sensor: "))
+        except:
+            print("Error: Unknown sensor!")
+            return
+        
+        self.connectedSensors[selectedSensor].UpdateData()
+        msg = Message(self.connectedSensors[selectedSensor].type, MessageType.DATA, self.connectedSensors[selectedSensor].token, data=self.connectedSensors[selectedSensor].GetData())
+        self.SendMessage(msg, True)
 
     def ReceiveMessage(self) -> Message:
         data = None
