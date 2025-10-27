@@ -1,5 +1,6 @@
 *.xopp
 /example
 /dokumentacia
+/__pycache__
 /simple_example
 test.py
