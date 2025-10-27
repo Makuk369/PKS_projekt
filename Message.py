@@ -7,7 +7,7 @@ from Sensors import SensorType
 class MessageType(Enum):
     REG = 0
     REGT = 1
-    AUTO_DATA = 10
+    DATA = 10
 
 def JsonSerializer(obj):
     if isinstance(obj, Enum):
@@ -22,8 +22,9 @@ class Message():
     sensorType: SensorType
     msgType: MessageType
     token: int = field(default=-1) # -1 == token not set yet
-    battery: int = field(default=100)
+    isLowBattery: bool = field(default=False)
     timestamp: float = field(default_factory=GetTimestamp) # UNIX timestamp
+    crc: int = field(init=False)
     data: dict = field(default_factory=dict) # additional data
 
     def ToJsonStr(self) -> str:
@@ -33,17 +34,23 @@ class Message():
     def InitFromJsonStr(cls, jsonStr: str):
         return cls(**json.loads(jsonStr)) #dict -> Message
     
+    def CalcCrc(self) -> None:
+        """token - (sensorType.value + msgType.value + battery + timestamp)"""
+        self.crc = self.token - (self.sensorType.value + self.msgType.value + self.isLowBattery + int(self.timestamp))
 
 if __name__ == '__main__':
-    msg = Message(SensorType.THERMONODE, MessageType.REG)
-    print("msg: ", msg)
-    # msg.data = ["daco", 123, 3.14]
-    rcv = msg.ToJsonStr()
-    print("rcv: ", rcv)
+    # msg = Message(SensorType.THERMONODE, MessageType.REG)
+    # msg.CalcCrc()
+    # print("msg: ", msg)
+    # # msg.data = ["daco", 123, 3.14]
+    # rcv = msg.ToJsonStr()
+    # print("rcv: ", rcv)
 
-    msg2 = Message.InitFromJsonStr(rcv)
-    print("msg2: ", msg2)
+    # msg2 = Message.InitFromJsonStr(rcv)
+    # print("msg2: ", msg2)
 
     # msg2 = Message(SensorType.THERMONODE, MessageType.REGT, 123)
     # rcv = msg2.ToJsonStr()
     # print(rcv)
+
+    print(1 + False)

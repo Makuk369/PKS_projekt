@@ -14,7 +14,7 @@ class Sensor(ABC):
         self.type: SensorType = devType
         self.token: int = token # -1 == invalid token/not registered to server
         self.isActive: bool = True
-        self.battery: int = 100
+        # self.isLowBattery: bool = False
 
     @abstractmethod
     def UpdateData(self) -> None:
@@ -38,7 +38,6 @@ class ThermoNode(Sensor):
         self.humidity = round(random.uniform(0.0, 100.0), 1)
         self.dewPoint = round(random.uniform(-50.0, 60.0), 1)
         self.pressure = round(random.uniform(800.0, 1100.0), 2)
-        self.battery = max(0, self.battery-1)
 
     def GetData(self) -> dict[str, float | int]:
         return {
@@ -61,7 +60,6 @@ class WindSense(Sensor):
         self.windGust = round(random.uniform(0.0, 70.0), 1)
         self.windDir = random.randint(0, 359)
         self.turbulence = round(random.random(), 1)
-        self.battery = max(0, self.battery-1)
 
     def GetData(self) -> dict[str, float | int]:
         return {
@@ -84,7 +82,6 @@ class RainDetect(Sensor):
         self.soilMoisture = round(random.uniform(0.0, 100.0), 1)
         self.floodRisk = random.randint(0, 3)
         self.rainDuration = random.randint(0, 60)
-        self.battery = max(0, self.battery-1)
 
     def GetData(self) -> dict[str, float | int]:
         return {
@@ -105,7 +102,6 @@ class AirQualityBox(Sensor):
         self.co2 = random.randint(300, 5000)
         self.ozone = round(random.uniform(0.0, 500.0), 1)
         self.airQualityIndex = random.randint(0, 500)
-        self.battery = max(0, self.battery-1)
 
     def GetData(self) -> dict[str, float | int]:
         return {

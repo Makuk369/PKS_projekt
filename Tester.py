@@ -13,6 +13,7 @@ class FunOptions(Enum):
     CONFIGURE = 1
     REGISTER_SENSORS = 2
     AUTO_DATA_MSG = 3
+    CUSTOM_MSG = 4
     SH_ALL_MSGS = 10
 
 class Tester():
@@ -57,6 +58,9 @@ class Tester():
                     else:
                         print("Error: Unknown choice!")
 
+                case FunOptions.CUSTOM_MSG.value:
+                    self.CustomMsg()
+
                 case FunOptions.SH_ALL_MSGS.value:
                     self.ShowMsgHistory()
 
@@ -69,10 +73,7 @@ class Tester():
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP socket creation
 
     def RegisterSensors(self) -> None:
-        print("Available sensors:")
-        for sensr in SensorType:
-            print(f"{sensr.value} - {sensr.name}")
-
+        self.PrintSensorOptions()
         selectedSensor = int(input("Select sensor to register: "))
         match selectedSensor:
             case SensorType.THERMONODE.value:
@@ -103,8 +104,24 @@ class Tester():
         while not self.stopBgThread.is_set():
             for sensor in self.connectedSensors:
                 sensor.UpdateData()
-                self.SendMessage(Message(sensor.type, MessageType.AUTO_DATA, sensor.token, sensor.battery, data=sensor.GetData()), True)
+                self.SendMessage(Message(sensor.type, MessageType.DATA, sensor.token, data=sensor.GetData()), True)
             time.sleep(10)
+
+    def CustomMsg(self) -> None:
+        i = 0
+        print("Connected Sensors:")
+        for sensor in self.connectedSensors:
+            print(f"{i} - {SensorType(sensor.type)}")
+            i += 1
+
+        selectedSensor = int(input("Select sensor: "))
+        msg = Message(self.connectedSensors[selectedSensor].type, MessageType.DATA, self.connectedSensors[selectedSensor].token, data=self.connectedSensors[selectedSensor].GetData())
+
+        lowBat = input("Low battery warning [y/n]?: ").strip().lower()
+        if lowBat == "y":
+            msg.isLowBattery = True
+        
+        self.SendMessage(msg)
 
     def ReceiveMessage(self) -> Message:
         data = None
@@ -114,7 +131,13 @@ class Tester():
         self.recievedMsgs.append(rcvmsg)
         return rcvmsg
 
-    def SendMessage(self, message: Message, inBg = False):
+    def SendMessage(self, message: Message, inBg = False, doCrcError = False):
+        if doCrcError:
+            message.CalcCrc()
+            message.crc += 1
+        else:
+            message.CalcCrc()
+
         if not inBg:
             self.sock.sendto(message.ToJsonStr().encode("utf8"), (self.serverIp, self.serverPort))
         else:
@@ -130,6 +153,11 @@ class Tester():
         print("Available functions:")
         for opts in FunOptions:
             print(f"{opts.value} - {opts.name}")
+
+    def PrintSensorOptions(self):
+        print("Available sensors:")
+        for sensr in SensorType:
+            print(f"{sensr.value} - {sensr.name}")
 
     def Exit(self) -> None:
         try:

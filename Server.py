@@ -86,14 +86,22 @@ class Server():
         self.bgsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.bgsock.bind((self.ip, self.port+1))
 
-    def Listen(self):
+    def Listen(self) -> None:
         rcvmsg = self.ReceiveMessage()
-        if (rcvmsg.token in self.tokens) or (rcvmsg.token == -1):
-            match rcvmsg.msgType:
-                case MessageType.REG.value:
-                    self.tokens.append(random.randint(0, maxint))
-                    self.SendMessage(Message(rcvmsg.sensorType, MessageType.REGT, self.tokens[-1], rcvmsg.battery))
-                    print(f"INFO: {rcvmsg.sensorType} REGISTERED at {rcvmsg.timestamp}")
+
+        if not ((rcvmsg.token in self.tokens) or (rcvmsg.token == -1)):
+            print("Error: Message has unknown token")
+            return
+        
+        if not (self.CheckCrc(rcvmsg)):
+            print("Error: Message has wrong crc")
+            return
+
+        match rcvmsg.msgType:
+            case MessageType.REG.value:
+                self.tokens.append(random.randint(0, maxint))
+                self.SendMessage(Message(rcvmsg.sensorType, MessageType.REGT, self.tokens[-1], rcvmsg.isLowBattery))
+                print(f"INFO: {rcvmsg.sensorType} REGISTERED at {rcvmsg.timestamp}")
 
     def AutoListen(self):
         print("Started Autolisten")
@@ -112,7 +120,11 @@ class Server():
         return rcvmsg
     
     def SendMessage(self, message: Message):
+        message.CalcCrc()
         self.sock.sendto(message.ToJsonStr().encode("utf8"), self.client)
+
+    def CheckCrc(self, message: Message) -> bool:
+        return message.crc == message.token - (message.sensorType.value + message.msgType.value + message.isLowBattery + int(message.timestamp))
 
     def ShowMsgHistory(self):
         print("----- All Message History -----")
@@ -123,7 +135,7 @@ class Server():
     def ShowSensorMsgHistory(self):
         print("----- Sensor Message History -----")
         for msg in self.recievedMsgs:
-            if msg.msgType == MessageType.AUTO_DATA.value:
+            if msg.msgType == MessageType.DATA.value:
                 print(f"{msg.timestamp} - {msg.sensorType}")
                 for param in msg.data:
                     print(f"{param}: {msg.data[param]}", end="; ")
