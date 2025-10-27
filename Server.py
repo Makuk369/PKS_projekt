@@ -60,6 +60,10 @@ class Server():
 
                 case FunOptions.HIDE_AUTO_MSGS.value:
                     self.hideAutoMsg = not self.hideAutoMsg
+                    if self.hideAutoMsg:
+                        print("Auto messages are now hidden")
+                    else:
+                        print("Auto messages will be displayed again")
 
                 case FunOptions.SH_ALL_MSGS.value:
                     self.ShowMsgHistory()
@@ -99,8 +103,17 @@ class Server():
                         self.tokens.append(random.randint(0, maxint))
                         self.SendMessage(Message(rcvmsg.sensorType, MessageType.REGT, self.tokens[-1]))
                         print(f"INFO: {rcvmsg.sensorType} REGISTERED at {rcvmsg.timestamp}")
-                    
+
                     case MessageType.DATA.value:
+                        if rcvmsg.isLowBattery:
+                            print(f"{rcvmsg.timestamp} - WARNING: LOW BATTERY {rcvmsg.sensorType}")
+                        else:
+                            print(f"{rcvmsg.timestamp} - {rcvmsg.sensorType}")
+                        for param in rcvmsg.data:
+                            print(f"{param}: {rcvmsg.data[param]}", end="; ")
+                        print("")
+                    
+                    case MessageType.AUTO_DATA.value:
                         if self.hideAutoMsg:
                             continue
 

@@ -32,7 +32,7 @@ class Tester():
     def Run(self):
         while(True):
             self.PrintFunOptions()
-            
+
             try:
                 fun = int(input("Select function: "))
             except:
@@ -113,7 +113,7 @@ class Tester():
         while not self.stopBgThread.is_set():
             for sensor in self.connectedSensors:
                 sensor.UpdateData()
-                self.SendMessage(Message(sensor.type, MessageType.DATA, sensor.token, data=sensor.GetData()))
+                self.SendMessage(Message(sensor.type, MessageType.AUTO_DATA, sensor.token, data=sensor.GetData()))
             time.sleep(10)
 
     def CustomMsg(self) -> None:
@@ -124,12 +124,16 @@ class Tester():
             i += 1
 
         selectedSensor = int(input("Select sensor: "))
-        msg = Message(self.connectedSensors[selectedSensor].type, MessageType.DATA, self.connectedSensors[selectedSensor].token, data=self.connectedSensors[selectedSensor].GetData())
 
         lowBat = input("Low battery warning [y/n]?: ").strip().lower()
         if lowBat == "y":
-            msg.isLowBattery = True
+            lowBat = True
+        else:
+            lowBat = False
+
+        self.connectedSensors[selectedSensor].SetData()
         
+        msg = Message(self.connectedSensors[selectedSensor].type, MessageType.DATA, self.connectedSensors[selectedSensor].token, lowBat, data=self.connectedSensors[selectedSensor].GetData())
         self.SendMessage(msg)
 
     def ReceiveMessage(self) -> Message:
