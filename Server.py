@@ -102,10 +102,12 @@ class Server():
                     
                     case MessageType.DATA.value:
                         if self.hideAutoMsg:
-                            # continue
-                            pass
+                            continue
 
-                        print(f"{rcvmsg.timestamp} - {rcvmsg.sensorType}")
+                        if rcvmsg.isLowBattery:
+                            print(f"{rcvmsg.timestamp} - WARNING: LOW BATTERY {rcvmsg.sensorType}")
+                        else:
+                            print(f"{rcvmsg.timestamp} - {rcvmsg.sensorType}")
                         for param in rcvmsg.data:
                             print(f"{param}: {rcvmsg.data[param]}", end="; ")
                         print("")

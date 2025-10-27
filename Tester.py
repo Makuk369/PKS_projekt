@@ -32,7 +32,12 @@ class Tester():
     def Run(self):
         while(True):
             self.PrintFunOptions()
-            fun = int(input("Select function: "))
+            
+            try:
+                fun = int(input("Select function: "))
+            except:
+                fun = -1
+
             match fun:
                 case FunOptions.EXIT.value:
                     self.Exit()
@@ -74,12 +79,15 @@ class Tester():
 
     def RegisterSensors(self) -> None:
         self.PrintSensorOptions()
-        selectedSensor = int(input("Select sensor to register: "))
+        try:
+            selectedSensor = int(input("Select sensor to register: "))
+        except:
+            selectedSensor = -1
+
         match selectedSensor:
             case SensorType.THERMONODE.value:
                 self.SendMessage(Message(SensorType.THERMONODE, MessageType.REG))
                 rcvmsg = self.ReceiveMessage()
-                print("Recieved: ", rcvmsg)
                 self.connectedSensors.append(ThermoNode(rcvmsg.token))
 
             case SensorType.WINDSENSE.value:
