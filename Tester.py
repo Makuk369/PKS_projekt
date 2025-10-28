@@ -2,8 +2,8 @@ import socket
 import threading
 import time
 from enum import Enum
-from Sensors import Sensor, SensorType, ThermoNode, WindSense, RainDetect, AirQualityBox
-from Message import Message, MessageType
+from sensors import Sensor, SensorType, ThermoNode, WindSense, RainDetect, AirQualityBox
+from message import Message, MessageType
 
 # SERVER_PORT = 50601 (client port != server port)
 SOCK_TIMEOUT = 5.0
@@ -140,12 +140,13 @@ class Tester():
                 while True: # DATA confirmation
                     rcvmsg = self.ReceiveMessage()
                     if rcvmsg is None:
+                        self.sock.settimeout(1)
                         sleepTime = max(0, sleepTime-1)
-                        time.sleep(1)
                         print(f"Not confirmed automessage - resending")
                         self.SendMessage(Message(sensor.type, MessageType.AUTO_DATA, sensor.token, data=sensor.GetData()))
                     else: # Recieved DATA_CONFIRM
                         # print(f"Confirmed: {rcvmsg}")
+                        self.sock.settimeout(SOCK_TIMEOUT)
                         break
 
             time.sleep(sleepTime)

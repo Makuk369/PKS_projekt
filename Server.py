@@ -4,8 +4,8 @@ import threading
 import time
 from enum import Enum
 from sys import maxsize as maxint
-from Message import Message, MessageType
-from Sensors import Sensor, SensorType, ThermoNode, WindSense, RainDetect, AirQualityBox
+from message import Message, MessageType
+from sensors import Sensor, SensorType, ThermoNode, WindSense, RainDetect, AirQualityBox
 
 DEFAULT_PORT = 50601
 SOCK_TIMEOUT = 5.0
