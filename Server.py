@@ -91,12 +91,16 @@ class Server():
 
             if rcvmsg is not None: 
                 if not ((rcvmsg.token in self.tokens) or (rcvmsg.token == -1)):
-                    print("Error: Message has unknown token")
-                    return
+                    print("Error: Message has unknown token!")
+                    continue
                 
                 if not (self.CheckCrc(rcvmsg)):
-                    print("Error: Message has wrong crc")
-                    return
+                    if rcvmsg.msgType == MessageType.DATA.value:
+                        print(f"INFO: {rcvmsg.sensorType} CORRUTPED DATA at {rcvmsg.timestamp}. REQUESTING DATA")
+                        self.SendMessage(Message(rcvmsg.sensorType, MessageType.DATA_BAD, rcvmsg.token))
+                    else:
+                        print("Error: Message has wrong crc!")
+                    continue
 
                 match rcvmsg.msgType:
                     case MessageType.REG.value:

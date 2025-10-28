@@ -8,6 +8,8 @@ class MessageType(Enum):
     REG = 0
     REGT = 1
     DATA = 2
+    DATA_CONFIRM = 3
+    DATA_BAD = 4
     AUTO_DATA = 10
 
 def JsonSerializer(obj):

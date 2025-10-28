@@ -168,6 +168,9 @@ class Tester():
         msg = Message(self.connectedSensors[selectedSensor].type, MessageType.DATA, self.connectedSensors[selectedSensor].token, data=self.connectedSensors[selectedSensor].GetData())
         self.SendMessage(msg, True)
 
+        self.ReceiveMessage()
+        self.SendMessage(msg)
+
     def ReceiveMessage(self) -> Message:
         data = None
         while data == None:
