@@ -3,8 +3,9 @@ import random
 import threading
 import time
 from enum import Enum
-from Message import Message, MessageType
 from sys import maxsize as maxint
+from Message import Message, MessageType
+from Sensors import Sensor, SensorType, ThermoNode, WindSense, RainDetect, AirQualityBox
 
 DEFAULT_PORT = 50601
 SOCK_TIMEOUT = 5.0
@@ -13,6 +14,7 @@ class FunOptions(Enum):
     EXIT = 0
     CONFIGURE = 1
     LISTEN = 2
+    NO_DATA_CONFIRM = 3
     SH_ALL_MSGS = 10
     HIDE_AUTO_MSGS = 11
 
@@ -21,7 +23,8 @@ class Server():
         self.ip: str
         self.port: int
         self.sock: socket.socket
-        self.tokens: list[int] = []
+        self.connectedSensors: list[Sensor] = []
+        self.noConfirmSensorsI: list[list[int]] = [] #[[index, repeats], ...]
         self.recievedMsgs: list[Message] = [] #something like a history of messages
 
         self.bgThread = threading.Thread(target=self.Listen, daemon=True)
@@ -58,6 +61,9 @@ class Server():
                     else:
                         self.bgThread.start()
 
+                case FunOptions.NO_DATA_CONFIRM.value:
+                    self.SetNoDataConfirm()
+
                 case FunOptions.SH_ALL_MSGS.value:
                     self.ShowMsgHistory()
 
@@ -90,7 +96,13 @@ class Server():
             rcvmsg = self.ReceiveMessage()
 
             if rcvmsg is not None: 
-                if not ((rcvmsg.token in self.tokens) or (rcvmsg.token == -1)):
+                tokenOk = False
+                for sensor in self.connectedSensors:
+                    if rcvmsg.token == sensor.token:
+                        tokenOk = True
+                if rcvmsg.token == -1:
+                    tokenOk = True
+                if not tokenOk:
                     print("Error: Message has unknown token!")
                     continue
                 
@@ -104,8 +116,25 @@ class Server():
 
                 match rcvmsg.msgType:
                     case MessageType.REG.value:
-                        self.tokens.append(random.randint(0, maxint))
-                        self.SendMessage(Message(rcvmsg.sensorType, MessageType.REGT, self.tokens[-1]))
+                        if rcvmsg.sensorType == SensorType.THERMONODE.value:
+                            self.connectedSensors.append(ThermoNode(random.randint(0, maxint)))
+                            self.SendMessage(Message(rcvmsg.sensorType, MessageType.REGT, self.connectedSensors[-1].token))
+
+                        elif rcvmsg.sensorType == SensorType.WINDSENSE.value:
+                            self.connectedSensors.append(WindSense(random.randint(0, maxint)))
+                            self.SendMessage(Message(rcvmsg.sensorType, MessageType.REGT, self.connectedSensors[-1].token))
+
+                        elif rcvmsg.sensorType == SensorType.RAINDETECT.value:
+                            self.connectedSensors.append(RainDetect(random.randint(0, maxint)))
+                            self.SendMessage(Message(rcvmsg.sensorType, MessageType.REGT, self.connectedSensors[-1].token))
+
+                        elif rcvmsg.sensorType == SensorType.AIRQUALITYBOX.value:
+                            self.connectedSensors.append(AirQualityBox(random.randint(0, maxint)))
+                            self.SendMessage(Message(rcvmsg.sensorType, MessageType.REGT, self.connectedSensors[-1].token))
+
+                        else:
+                            print("Error: Unknown sensor!")
+                            continue
                         print(f"INFO: {rcvmsg.sensorType} REGISTERED at {rcvmsg.timestamp}")
 
                     case MessageType.DATA.value:
@@ -116,21 +145,63 @@ class Server():
                         for param in rcvmsg.data:
                             print(f"{param}: {rcvmsg.data[param]}", end="; ")
                         print("")
+
+                        if len(self.noConfirmSensorsI) == 0: # noConfirmSensorsI is empty
+                            self.SendMessage(Message(rcvmsg.sensorType, MessageType.DATA_CONFIRM, rcvmsg.token))
+
+                        for nocons in self.noConfirmSensorsI.copy():
+                            if rcvmsg.token == self.connectedSensors[nocons[0]]: # find noConfirmSensor -> dont confirm
+                                nocons[1] -= 1
+                                if nocons[1] == 0:
+                                    self.noConfirmSensorsI.remove(nocons)
+                            else:
+                                self.SendMessage(Message(rcvmsg.sensorType, MessageType.DATA_CONFIRM, rcvmsg.token))
                     
                     case MessageType.AUTO_DATA.value:
-                        if self.hideAutoMsg:
-                            continue
+                        if not self.hideAutoMsg:
+                            if rcvmsg.isLowBattery:
+                                print(f"{rcvmsg.timestamp} - WARNING: LOW BATTERY {rcvmsg.sensorType}")
+                            else:
+                                print(f"{rcvmsg.timestamp} - {rcvmsg.sensorType}")
+                            for param in rcvmsg.data:
+                                print(f"{param}: {rcvmsg.data[param]}", end="; ")
+                            print("")
+                        
+                        if len(self.noConfirmSensorsI) == 0: # noConfirmSensorsI is empty -> send confirm
+                            # print("sending confirmation")
+                            self.SendMessage(Message(rcvmsg.sensorType, MessageType.DATA_CONFIRM, rcvmsg.token))
 
-                        if rcvmsg.isLowBattery:
-                            print(f"{rcvmsg.timestamp} - WARNING: LOW BATTERY {rcvmsg.sensorType}")
-                        else:
-                            print(f"{rcvmsg.timestamp} - {rcvmsg.sensorType}")
-                        for param in rcvmsg.data:
-                            print(f"{param}: {rcvmsg.data[param]}", end="; ")
-                        print("")
+                        for nocons in self.noConfirmSensorsI.copy():
+                            if rcvmsg.token == self.connectedSensors[nocons[0]].token: # find noConfirmSensor -> dont confirm
+                                nocons[1] -= 1
+                                # print(f"not confirming for next {nocons[1]} times")
+                                if nocons[1] == 0:
+                                    self.noConfirmSensorsI.remove(nocons)
+                                    # print(f"removed nocon: {self.noConfirmSensorsI}")
+                            else:
+                                self.SendMessage(Message(rcvmsg.sensorType, MessageType.DATA_CONFIRM, rcvmsg.token))
                 
                     case _:
                         print("Error: Unknown message type!") 
+
+    def SetNoDataConfirm(self) -> None:
+        i = 0
+        print("Connected Sensors:")
+        for sensor in self.connectedSensors:
+            print(f"{i} - {SensorType(sensor.type)}")
+            i += 1
+        
+        if i == 0:
+            print("Error: No connected sensors!")
+            return
+
+        try:
+            selectedSensor = int(input("Select sensor: "))
+        except:
+            print("Error: Unknown sensor!")
+            return
+        
+        self.noConfirmSensorsI.append([selectedSensor, 3])
 
     def ReceiveMessage(self) -> Message | None:
         """Returns None after socket timeout"""

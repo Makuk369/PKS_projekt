@@ -6,6 +6,7 @@ from Sensors import Sensor, SensorType, ThermoNode, WindSense, RainDetect, AirQu
 from Message import Message, MessageType
 
 # SERVER_PORT = 50601 (client port != server port)
+SOCK_TIMEOUT = 5.0
 
 class FunOptions(Enum):
     EXIT = 0
@@ -79,6 +80,7 @@ class Tester():
         self.serverIp = input("Enter server ip: ")
         self.serverPort = int(input("Enter server port: "))
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP socket creation
+        self.sock.settimeout(SOCK_TIMEOUT)
 
     def RegisterSensors(self) -> None:
         self.PrintSensorOptions()
@@ -91,21 +93,37 @@ class Tester():
             case SensorType.THERMONODE.value:
                 self.SendMessage(Message(SensorType.THERMONODE, MessageType.REG))
                 rcvmsg = self.ReceiveMessage()
+                if rcvmsg is None: 
+                    print("Error: Failed to register sensor!")
+                    return
+                print(f"Registered sensor: {rcvmsg.sensorType}")
                 self.connectedSensors.append(ThermoNode(rcvmsg.token))
 
             case SensorType.WINDSENSE.value:
                 self.SendMessage(Message(SensorType.WINDSENSE, MessageType.REG))
                 rcvmsg = self.ReceiveMessage()
+                if rcvmsg is None: 
+                    print("Error: Failed to register sensor!")
+                    return
+                print(f"Registered sensor: {rcvmsg.sensorType}")
                 self.connectedSensors.append(WindSense(rcvmsg.token))
 
             case SensorType.RAINDETECT.value:
                 self.SendMessage(Message(SensorType.RAINDETECT, MessageType.REG))
                 rcvmsg = self.ReceiveMessage()
+                if rcvmsg is None: 
+                    print("Error: Failed to register sensor!")
+                    return
+                print(f"Registered sensor: {rcvmsg.sensorType}")
                 self.connectedSensors.append(RainDetect(rcvmsg.token))
 
             case SensorType.AIRQUALITYBOX.value:
                 self.SendMessage(Message(SensorType.AIRQUALITYBOX, MessageType.REG))
                 rcvmsg = self.ReceiveMessage()
+                if rcvmsg is None: 
+                    print("Error: Failed to register sensor!")
+                    return
+                print(f"Registered sensor: {rcvmsg.sensorType}")
                 self.connectedSensors.append(AirQualityBox(rcvmsg.token))
 
             case _:
@@ -113,11 +131,26 @@ class Tester():
 
     def AutoDataMsg(self) -> None:
         print("Started Automessage")
+        sleepTime = 10
         while not self.stopBgThread.is_set():
             for sensor in self.connectedSensors:
                 sensor.UpdateData()
                 self.SendMessage(Message(sensor.type, MessageType.AUTO_DATA, sensor.token, data=sensor.GetData()))
-            time.sleep(10)
+
+                while True: # DATA confirmation
+                    rcvmsg = self.ReceiveMessage()
+                    if rcvmsg is None:
+                        sleepTime = max(0, sleepTime-1)
+                        time.sleep(1)
+                        print(f"Not confirmed automessage - resending")
+                        self.SendMessage(Message(sensor.type, MessageType.AUTO_DATA, sensor.token, data=sensor.GetData()))
+                    else: # Recieved DATA_CONFIRM
+                        # print(f"Confirmed: {rcvmsg}")
+                        break
+
+            time.sleep(sleepTime)
+            sleepTime = 10
+        print("Automessage stopped")
 
     def CustomMsg(self) -> None:
         i = 0
@@ -127,7 +160,7 @@ class Tester():
             i += 1
         
         if i == 0:
-            print("Error: No sonnected sensors!")
+            print("Error: No connected sensors!")
             return
 
         try:
@@ -147,6 +180,12 @@ class Tester():
         msg = Message(self.connectedSensors[selectedSensor].type, MessageType.DATA, self.connectedSensors[selectedSensor].token, lowBat, data=self.connectedSensors[selectedSensor].GetData())
         self.SendMessage(msg)
 
+        rcvmsg = self.ReceiveMessage()
+        if rcvmsg is None:
+            return
+        if rcvmsg.msgType == MessageType.DATA_CONFIRM:
+            print("Info: Data arrived successfully!")
+
     def CustomMsgWithError(self) -> None:
         i = 0
         print("Connected Sensors:")
@@ -155,7 +194,7 @@ class Tester():
             i += 1
 
         if i == 0:
-            print("Error: No sonnected sensors!")
+            print("Error: No connected sensors!")
             return
 
         try:
@@ -171,10 +210,12 @@ class Tester():
         self.ReceiveMessage()
         self.SendMessage(msg)
 
-    def ReceiveMessage(self) -> Message:
-        data = None
-        while data == None:
-            data = self.sock.recv(2048) #buffer size
+    def ReceiveMessage(self) -> Message | None:
+        try:
+            data = self.sock.recv(2048)
+        except socket.timeout:
+            return None
+
         rcvmsg = Message.InitFromJsonStr(str(data, encoding="utf-8"))
         self.recievedMsgs.append(rcvmsg)
         return rcvmsg
@@ -206,6 +247,10 @@ class Tester():
 
     def Exit(self) -> None:
         try:
+            self.stopBgThread.set()
+            while self.bgThread.is_alive():
+                time.sleep(0.5)
+                print("Waiting for bgThread to stop")
             self.sock.close() # correctly closing socket
         except AttributeError:
             pass
